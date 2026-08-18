@@ -1,5 +1,5 @@
 //------------------------------------------------------------------------------
-// perftest/include/perftest.h: include file for perftest utility library
+// gbperftest/include/gbperftest.h: include file for gbperftest utility library
 //------------------------------------------------------------------------------
 
 // peftest, Timothy A. Davis, (c) 2026, All Rights Reserved.
@@ -14,7 +14,7 @@
 #include "LAGraph_demo.h"
 #include "../GraphBLAS/Source/global/GB_Global.h"
 
-void perftest_nothing (void) ;
+void gbperftest_nothing (void) ;
 
 #define OK(method)                                                          \
 {                                                                           \

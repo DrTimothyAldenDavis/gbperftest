@@ -1,5 +1,5 @@
 #-------------------------------------------------------------------------------
-# perftest/CMakeLists.txt:  cmake script for perftest
+# gbperftest/CMakeLists.txt:  cmake script for gbperftest
 #-------------------------------------------------------------------------------
 
 # peftest, Timothy A. Davis, (c) 2026, All Rights Reserved.
@@ -9,7 +9,7 @@
 
 cmake_minimum_required ( VERSION 3.23 )
 
-project ( perftest LANGUAGES C CXX )
+project ( gbperftest LANGUAGES C CXX )
 
 #-------------------------------------------------------------------------------
 # SuiteSparse policies
@@ -64,21 +64,21 @@ endif ( )
 message ( STATUS "CMAKE C flags: " ${CMAKE_C_FLAGS} )
 
 #-------------------------------------------------------------------------------
-# add source files for the perftest utility library
+# add source files for the gbperftest utility library
 #-------------------------------------------------------------------------------
 
 file ( GLOB PERFTEST_LIB_SOURCES "src/*.c" )
-add_library ( perftest SHARED ${PERFTEST_LIB_SOURCES} )
+add_library ( gbperftest SHARED ${PERFTEST_LIB_SOURCES} )
 
-target_link_libraries ( perftest PUBLIC OpenMP::OpenMP_C )
-target_link_libraries ( perftest PUBLIC GraphBLAS )
-target_link_libraries ( perftest PUBLIC LAGraph )
-target_link_libraries ( perftest PUBLIC LAGraphX )
+target_link_libraries ( gbperftest PUBLIC OpenMP::OpenMP_C )
+target_link_libraries ( gbperftest PUBLIC GraphBLAS )
+target_link_libraries ( gbperftest PUBLIC LAGraph )
+target_link_libraries ( gbperftest PUBLIC LAGraphX )
 
 #-------------------------------------------------------------------------------
 # add testing executables
 #-------------------------------------------------------------------------------
 
 add_executable ( simple_perf "simple_perf.c" )
-target_link_libraries ( simple_perf PUBLIC perftest )
+target_link_libraries ( simple_perf PUBLIC gbperftest )
 

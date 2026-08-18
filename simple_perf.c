@@ -1,15 +1,15 @@
 //------------------------------------------------------------------------------
-// perftest/simple_perf: basic performance tests
+// gbperftest/simple_perf: basic performance tests
 //------------------------------------------------------------------------------
 
-// perftest, Timothy A. Davis, (c) 2026, All Rights Reserved.
+// gbperftest, Timothy A. Davis, (c) 2026, All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
 //------------------------------------------------------------------------------
 
 // usage: ./build/simple_perf matrixfile sourcenodes
 
-#include "perftest.h"
+#include "gbperftest.h"
 
 int main (int argc, char **argv)
 {
@@ -30,7 +30,7 @@ int main (int argc, char **argv)
 
     char msg [LAGRAPH_MSG_LEN] ;
     printf ("%s: argc %d\n", __FILE__, argc) ;
-//  perftest_nothing ( ) ;
+//  gbperftest_nothing ( ) ;
 
     OK (demo_init (0)) ;
 

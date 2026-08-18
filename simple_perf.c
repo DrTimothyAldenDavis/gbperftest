@@ -28,11 +28,20 @@ int main (int argc, char **argv)
     int ngpus = 0 ;
     #endif
 
+    // turn off the GPUs
+    ngpus = 0 ;
+
     char msg [LAGRAPH_MSG_LEN] ;
     printf ("%s: argc %d\n", __FILE__, argc) ;
 //  gbperftest_nothing ( ) ;
 
+    // enable memory tracking
+    GB_Global_malloc_tracking_set (true) ;
+
+    // turn off the GPU
+    GB_Global_hack_set (2, 2) ;
     OK (demo_init (0)) ;
+    GB_Global_hack_set (2, 2) ;
 
     OK (readproblem (&G,
         /* srcs: */ NULL,

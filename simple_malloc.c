@@ -45,7 +45,7 @@ int main (int argc, char **argv)
     void *p [1024] ;
 
     // enable memory tracking
-    GB_Global_malloc_tracking_set (true) ;
+    // GB_Global_malloc_tracking_set (true) ;
 
     // turn off the GPU
     GB_Global_hack_set (2, 2) ;
@@ -63,7 +63,8 @@ int main (int argc, char **argv)
 
     for (int trial = 0 ; trial < ntrials ; trial++)
     {
-        if (trial % 1000 == 0) printf ("trial: %d\n", trial) ;
+        // if (trial % 1000 == 0)
+        printf ("\n------------------- trial: %d\n", trial) ;
         for (int k = 0 ; k < nmallocs ; k++)
         {
             double x = ((double) rand ( )) / ((double) RAND_MAX) ;
@@ -80,6 +81,7 @@ int main (int argc, char **argv)
     // finalize the test
     //--------------------------------------------------------------------------
 
+    printf ("\n------------------- finalize: %d\n", trial) ;
     OK (LAGraph_Finalize (msg)) ;
     return (0) ;
 }

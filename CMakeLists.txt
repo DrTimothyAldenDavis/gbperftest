@@ -82,3 +82,6 @@ target_link_libraries ( gbperftest PUBLIC LAGraphX )
 add_executable ( simple_perf "simple_perf.c" )
 target_link_libraries ( simple_perf PUBLIC gbperftest )
 
+add_executable ( simple_malloc "simple_malloc.c" )
+target_link_libraries ( simple_malloc PUBLIC gbperftest )
+

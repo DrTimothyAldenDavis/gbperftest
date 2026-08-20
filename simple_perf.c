@@ -7,7 +7,9 @@
 
 //------------------------------------------------------------------------------
 
-// usage: ./build/simple_perf matrixfile sourcenodes
+// usage:
+//     ./build/simple_perf matrixfile sourcenodes
+//     ./build/simple_perf m n nvals
 
 #include "gbperftest.h"
 
@@ -15,7 +17,7 @@ int main (int argc, char **argv)
 {
 
     LAGraph_Graph G = NULL ;
-    GrB_Matrix T = NULL, D = NULL ;
+    GrB_Matrix T = NULL, R = NULL, C = NULL ;
     GrB_Vector V = NULL ;
 
     //--------------------------------------------------------------------------
@@ -28,34 +30,43 @@ int main (int argc, char **argv)
     int ngpus = 0 ;
     #endif
 
-    // turn off the GPUs
-    ngpus = 0 ;
-
     char msg [LAGRAPH_MSG_LEN] ;
     printf ("%s: argc %d\n", __FILE__, argc) ;
-//  gbperftest_nothing ( ) ;
 
     // enable memory tracking
-    GB_Global_malloc_tracking_set (true) ;
+//  GB_Global_malloc_tracking_set (true) ;
 
-    // turn off the GPU
-    GB_Global_hack_set (2, 2) ;
     OK (demo_init (0)) ;
-    GB_Global_hack_set (2, 2) ;
 
-    OK (readproblem (&G,
-        /* srcs: */ NULL,
-        /* make_symmetric: */ false,
-        /* remove_self_edges: */ false,
-        /* structure: */ false,
-        /* preferred type: */ NULL,
-        /* ensure_positive: */ false,
-        argc, argv)) ;
+    if (argc == 4)
+    {
+        int64_t m = 0, n = 0, nvals = 0 ;
+        sscanf (argv [1], "%" PRId64, &m) ;
+        sscanf (argv [2], "%" PRId64, &n) ;
+        sscanf (argv [3], "%" PRId64, &nvals) ;
+        printf ("Random problem: m %ld, n %ld, nvals %ld\n", m, n, nvals) ;
+        double density = ((double) nvals) / (((double) m) * ((double) n)) ;
+        OK (LAGraph_Random_Matrix (&T, GrB_FP64, m, n, density,
+            (uint64_t) 1, msg)) ;
+        OK (LAGraph_New (&G, &T, LAGraph_ADJACENCY_DIRECTED, msg)) ;
+    }
+    else
+    {
+        OK (readproblem (&G,
+            /* srcs: */ NULL,
+            /* make_symmetric: */ false,
+            /* remove_self_edges: */ false,
+            /* structure: */ false,
+            /* preferred type: */ NULL,
+            /* ensure_positive: */ false,
+            argc, argv)) ;
+    }
 
     OK (LAGraph_Graph_Print (G, 2, stdout, msg)) ;
 
-    int64_t n ;
-    OK (GrB_Matrix_nrows (&n, G->A)) ;
+    int64_t m, n ;
+    OK (GrB_Matrix_nrows (&m, G->A)) ;
+    OK (GrB_Matrix_ncols (&n, G->A)) ;
 
     GrB_Type type ;
     OK (GxB_Matrix_type (&type, G->A)) ;
@@ -66,9 +77,17 @@ int main (int argc, char **argv)
     // test row/col scale
     //--------------------------------------------------------------------------
 
+    uint64_t I [1] = {0} ;
     OK (GrB_Vector_new (&V, type, n)) ;
     OK (GrB_assign (V, NULL, NULL, 1, GrB_ALL, n, NULL)) ;
-    OK (GrB_Matrix_diag (&D, V, 0)) ;
+    OK (GrB_assign (V, NULL, NULL, 2, I, 1, NULL)) ;    // make V non-iso
+    OK (GrB_Matrix_diag (&C, V, 0)) ;
+    OK (GrB_free (&V)) ;
+
+    OK (GrB_Vector_new (&V, type, m)) ;
+    OK (GrB_assign (V, NULL, NULL, 1, GrB_ALL, m, NULL)) ;
+    OK (GrB_assign (V, NULL, NULL, 2, I, 1, NULL)) ;    // make V non-iso
+    OK (GrB_Matrix_diag (&R, V, 0)) ;
     OK (GrB_free (&V)) ;
 
     OK (GrB_set (GrB_GLOBAL, (int32_t) 1, GxB_BURBLE)) ;
@@ -83,9 +102,9 @@ int main (int argc, char **argv)
             double t = LAGraph_WallClockTime ( ) ;
             OK (GrB_Matrix_new (&T, type, n, n)) ;
             OK (GrB_mxm (T, NULL, NULL, GrB_PLUS_TIMES_SEMIRING_FP64,
-                G->A, D, NULL)) ;
+                G->A, C, NULL)) ;
             t = LAGraph_WallClockTime ( ) - t ;
-            printf ("GPU: %d, T=A*D, trial %d: %g sec\n", gpu, k, t) ;
+            printf ("GPU: %d, T=A*C, trial %d: %g sec\n", gpu, k, t) ;
             OK (GrB_free (&T)) ;
         }
 
@@ -95,16 +114,17 @@ int main (int argc, char **argv)
             double t = LAGraph_WallClockTime ( ) ;
             OK (GrB_Matrix_new (&T, type, n, n)) ;
             OK (GrB_mxm (T, NULL, NULL, GrB_PLUS_TIMES_SEMIRING_FP64,
-                D, G->A, NULL)) ;
+                R, G->A, NULL)) ;
             t = LAGraph_WallClockTime ( ) - t ;
-            printf ("GPU: %d, T=D*A, trial %d: %g sec\n", gpu, k, t) ;
+            printf ("GPU: %d, T=R*A, trial %d: %g sec\n", gpu, k, t) ;
             OK (GrB_free (&T)) ;
         }
     }
 
     OK (GrB_set (GrB_GLOBAL, (int32_t) 0, GxB_BURBLE)) ;
 
-    OK (GrB_free (&D)) ;
+    OK (GrB_free (&R)) ;
+    OK (GrB_free (&C)) ;
 
     //--------------------------------------------------------------------------
     // test the transpose

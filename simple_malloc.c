@@ -60,28 +60,40 @@ int main (int argc, char **argv)
 
     printf ("nbig: %g MB, nmallocs: %d ntrials: %d\n",
         ((double) nbig) / ((double) MBYTE), nmallocs, ntrials) ;
+    double tmalloc = 0, tfree = 0 ;
 
     for (int trial = 0 ; trial < ntrials ; trial++)
     {
-        // if (trial % 1000 == 0)
-        printf ("\n------------------- trial: %d\n", trial) ;
+        if (trial % 1000 == 0)
+        {
+            printf ("\n------------------- trial: %d (malloc %g, free %g)\n",
+                trial, tmalloc, tfree) ;
+        }
+        double t = LAGraph_WallClockTime ( ) ;
         for (int k = 0 ; k < nmallocs ; k++)
         {
             double x = ((double) rand ( )) / ((double) RAND_MAX) ;
             size_t n = (size_t) (((double) nbig) * x) ;
             OK (LAGraph_Malloc (& (p [k]), n, sizeof (uint8_t), msg)) ;
         }
+        t = LAGraph_WallClockTime ( ) - t ;
+        tmalloc += t ;
+        t = LAGraph_WallClockTime ( ) ;
         for (int k = 0 ; k < nmallocs ; k++)
         {
             OK (LAGraph_Free (& (p [k]), msg)) ;
         }
+        t = LAGraph_WallClockTime ( ) - t ;
+        tfree += t ;
     }
+    
+    printf ("total tmalloc %g tfree %g\n", tmalloc, tfree) ;
 
     //--------------------------------------------------------------------------
     // finalize the test
     //--------------------------------------------------------------------------
 
-    printf ("\n------------------- finalize: %d\n", trial) ;
+    printf ("\n------------------- finalize: %d\n", ntrials) ;
     OK (LAGraph_Finalize (msg)) ;
     return (0) ;
 }

@@ -1,5 +1,5 @@
 //------------------------------------------------------------------------------
-// gbperf/gbperf_trianglecount.c: benchmark for LAGr_TriangleCount_GPU
+// gbperf/gbperf_trianglecount.c: benchmark for LAGr_TriangleCount
 //------------------------------------------------------------------------------
 
 //------------------------------------------------------------------------------
@@ -15,15 +15,11 @@
 //      web:        84907041475
 //      road:       438804
 
-// #include "LAGraphX.h"
 #include "gbperftest.h"
-// #include <time.h>
 
 #if defined ( GRAPHBLAS_HAS_CUDA )
 
-// #define EXPERIMENTAL_GPU
 #include "LAGraph_demo.h"
-// #include "GB_Global.h"
 void GB_Global_hack_set (int k, int64_t hack) ;
 
 // to run just once, with p = omp_get_max_threads() threads
@@ -85,7 +81,7 @@ int main (int argc, char **argv)
     LAGraph_Graph G = NULL ;
 
     // start GraphBLAS and LAGraph
-    bool burble = false ;
+    bool burble = true ;
     demo_init (burble) ;
 
     int ntrials = 5 ;
@@ -168,8 +164,7 @@ int main (int argc, char **argv)
     for (int trial = 1 ; trial <= 3 ; trial++)
     {
         double ttot = LAGraph_WallClockTime ( ) ;
-        OK (LAGr_TriangleCount_GPU (&ntriangles, G, &method, &presort,
-            msg)) ;
+        OK (LAGr_TriangleCount (&ntriangles, G, &method, &presort, msg)) ;
         printf ("ON CPU (trial %d): # of triangles: %" PRIu64 "\n",
             trial, ntriangles) ;
         print_method (stdout, 6, presort) ;
@@ -190,8 +185,7 @@ int main (int argc, char **argv)
     {
         //LAGr_TriangleCount_Method method = LAGr_TriangleCount_Sandia_ULT ;
         double ttot = LAGraph_WallClockTime ( ) ;
-        OK (LAGr_TriangleCount_GPU (&ntriangles_gpu, G, &method,
-            &presort, msg)) ;
+        OK (LAGr_TriangleCount (&ntriangles_gpu, G, &method, &presort, msg)) ;
         ttot = LAGraph_WallClockTime ( ) - ttot ;
         printf ("ON GPU (trial %d): # of triangles: %" PRIu64 " (GPU)\n",
             trial, ntriangles_gpu) ;
@@ -201,131 +195,14 @@ int main (int argc, char **argv)
             nthreads_max, ttot, 1e-6 * nvals / ttot) ;
     }
 
-#if 0
     if (ntriangles_gpu != ntriangles)
     {
         printf ("wrong # triangles: %g %g\n", (double) ntriangles,
-            (double) ntsimple) ;
+            (double) ntriangles_gpu) ;
         fflush (stdout) ;
         fflush (stderr) ;
         abort ( ) ;
     }
-
-    GB_Global_hack_set (2, 2) ; // never use the GPU
-    presort = LAGr_TriangleCount_AutoSort ; // = 0 (auto selection)
-
-// #if 0
-    if (ntriangles != ntsimple)
-    {
-        printf ("wrong # triangles: %g %g\n", (double) ntriangles,
-            (double) ntsimple) ;
-        abort ( ) ;
-    }
-// #endif
-
-    double t_best = INFINITY ;
-    int method_best = -1 ;
-    int nthreads_best = -1 ;
-    int sorting_best = 0 ;
-    int gpu_best = -1 ;
-
-    // kron: input graph: nodes: 134217726 edges: 4223264644
-    // fails on methods 3 and 4.
-
-    // just try methods 5 and 6
-    // for (int method = 5 ; method <= 6 ; method++)
-
-    // try all methods 3 to 5
-//  for (int method = 3 ; method <= 5 ; method++)
-    for (int method = 0 ; method <= 6 ; method++)   // HACK
-    {
-        // for (int sorting = -1 ; sorting <= 2 ; sorting++)
-
-//      int sorting = LAGr_TriangleCount_AutoSort ; // just use auto-sort
-        int sorting = LAGr_TriangleCount_NoSort ; // HACK
-
-        for (int with_gpu = 0 ; with_gpu <= 1 ; with_gpu++)
-        {
-
-            if (with_gpu)
-            {
-                GB_Global_hack_set (2, 1) ; // always use the GPU
-            }
-            else
-            {
-                GB_Global_hack_set (2, 2) ; // never use the GPU
-            }
-
-            printf ("\nMethod: GPU: %d ", with_gpu) ;
-            print_method (stdout, method, sorting) ;
-
-	    /**
-            if (n == 134217726 && method < 5)
-            {
-                printf ("kron fails on method %d; skipped\n", method) ;
-                continue ;
-            }
-            if (n != 134217728 && method < 5)
-            {
-                printf ("all but urand is slow with method %d: skipped\n",
-                        method) ;
-                continue ;
-            }
-	    **/
-
-            for (int t = 1 ; t <= nt ; t++)
-            {
-                int nthreads = Nthreads [t] ;
-                if (nthreads > nthreads_max) continue ;
-                OK (LAGraph_SetNumThreads (1, nthreads, msg)) ;
-                GrB_Index nt2 ;
-                double ttot = 0, ttrial [100] ;
-                LAGr_TriangleCount_Presort p ;
-                LAGr_TriangleCount_Method m ;
-                for (int trial = 0 ; trial < ntrials ; trial++)
-                {
-                    m = method ;
-                    p = sorting ;
-                    double tt = LAGraph_WallClockTime ( ) ;
-                    OK(LAGr_TriangleCount_GPU (&nt2, G, &m, &p, msg));
-                    ttrial [trial] = LAGraph_WallClockTime ( ) - tt ;
-                    ttot += ttrial [trial] ;
-                    printf ("trial %2d: %12.6f sec rate %6.2f  # triangles: "
-                        "%g\n", trial, ttrial [trial],
-                        1e-6 * nvals / ttrial [trial], (double) nt2) ;
-                }
-                ttot = ttot / ntrials ;
-                printf ("nthreads: %3d time: %12.6f rate: %6.2f", nthreads,
-                        ttot, 1e-6 * nvals / ttot) ;
-                printf ("   # of triangles: %" PRId64 " presort: %d\n",
-                        ntriangles, (int) p) ;
-                if (nt2 != ntriangles)
-                {
-                    printf ("Test failure!\n") ;
-                    abort ( ) ;
-                }
-                fprintf (stderr, "\nMethod used: ") ;
-                print_method (stderr, m, p) ;
-                fprintf (stderr, "Avg: TC method%d.%d %3d: %10.3f sec: %s\n",
-                         method, sorting, nthreads, ttot, matrix_name) ;
-
-                if (ttot < t_best)
-                {
-                    t_best = ttot ;
-                    method_best = method ;
-                    nthreads_best = nthreads ;
-                    sorting_best = sorting ;
-                    gpu_best = with_gpu ;
-                }
-            }
-        }
-    }
-
-    printf ("\nBest method: GPU: %d ", gpu_best) ;
-    print_method (stdout, method_best, sorting_best) ;
-    printf ("nthreads: %3d time: %12.6f rate: %6.2f\n",
-        nthreads_best, t_best, 1e-6 * nvals / t_best) ;
-#endif
 
     LG_FREE_ALL ;
     OK (LAGraph_Finalize (msg)) ;

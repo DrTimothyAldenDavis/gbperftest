@@ -1,5 +1,5 @@
 //------------------------------------------------------------------------------
-// gbperftest/simple_perf: basic performance tests
+// gbperftest/gbperf_transpose: basic performance tests (scale and transpose)
 //------------------------------------------------------------------------------
 
 // gbperftest, Timothy A. Davis, (c) 2026, All Rights Reserved.

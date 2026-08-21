@@ -1,5 +1,5 @@
 //------------------------------------------------------------------------------
-// gbperftest/simple_malloc: basic tests of malloc/free
+// gbperftest/gbperf_malloc: basic tests of malloc/free
 //------------------------------------------------------------------------------
 
 // gbperftest, Timothy A. Davis, (c) 2026, All Rights Reserved.

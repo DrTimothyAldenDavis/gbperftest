@@ -79,9 +79,13 @@ target_link_libraries ( gbperftest PUBLIC LAGraphX )
 # add testing executables
 #-------------------------------------------------------------------------------
 
-add_executable ( simple_perf "simple_perf.c" )
-target_link_libraries ( simple_perf PUBLIC gbperftest )
+file ( GLOB TEST_SOURCES LIST_DIRECTORIES false gbperf_*.c )
 
-add_executable ( simple_malloc "simple_malloc.c" )
-target_link_libraries ( simple_malloc PUBLIC gbperftest )
+foreach ( test_source_file ${TEST_SOURCES} )
+    get_filename_component ( test_filename ${test_source_file} NAME )
+    string ( REPLACE ".c" "" test ${test_filename} )
+    message ( STATUS "Test program: ${test}" )
+    add_executable ( ${test} ${test_source_file} )
+    target_link_libraries ( ${test} PUBLIC gbperftest )
+endforeach ( test_source_file ${TEST_SOURCES} )
 

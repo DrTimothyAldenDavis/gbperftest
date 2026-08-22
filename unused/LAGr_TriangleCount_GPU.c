@@ -1,17 +1,9 @@
 //------------------------------------------------------------------------------
-// LAGr_TriangleCount: Triangle counting using various methods
+// LAGr_TriangleCount_GPU: Triangle counting on the GPU
 //------------------------------------------------------------------------------
 
-// LAGraph, (c) 2019-2022 by The LAGraph Contributors, All Rights Reserved.
-// SPDX-License-Identifier: BSD-2-Clause
-//
-// For additional details (including references to third party source code and
-// other files) see the LICENSE file or contact permission@sei.cmu.edu. See
-// Contributors.txt for a full list of contributors. Created, in part, with
-// funding and support from the U.S. Government (see Acknowledgments.txt file).
-// DM22-0790
-
-// Contributed by Timothy A. Davis, Texas A&M University
+// gbperftest, Timothy A. Davis, (c) 2026, All Rights Reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 //------------------------------------------------------------------------------
 

@@ -1,7 +1,6 @@
 # gbperftest: unit performance tests for GraphBLAS and LAGraph
 
 gbperftest, Timothy A. Davis, (c) 2026, All Rights Reserved.
-
 SPDX-License-Identifier: Apache-2.0
 
 No documentation is provided; this package is meant for development and testing

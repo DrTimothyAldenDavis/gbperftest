@@ -2,7 +2,7 @@
 # gbperftest/CMakeLists.txt:  cmake script for gbperftest
 #-------------------------------------------------------------------------------
 
-# peftest, Timothy A. Davis, (c) 2026, All Rights Reserved.
+# gbperftest, Timothy A. Davis, (c) 2026, All Rights Reserved.
 # SPDX-License-Identifier: Apache-2.0
 
 #-------------------------------------------------------------------------------
@@ -74,6 +74,7 @@ target_link_libraries ( gbperftest PUBLIC OpenMP::OpenMP_C )
 target_link_libraries ( gbperftest PUBLIC GraphBLAS )
 target_link_libraries ( gbperftest PUBLIC LAGraph )
 target_link_libraries ( gbperftest PUBLIC LAGraphX )
+target_link_libraries ( gbperftest PUBLIC m )
 
 #-------------------------------------------------------------------------------
 # add testing executables

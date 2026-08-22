@@ -1,9 +1,7 @@
 #!/bin/bash
 
-# LAGraph, (c) 2021 by The LAGraph Contributors, All Rights Reserved.
-# SPDX-License-Identifier: BSD-2-Clause
-# See additional acknowledgments in the LICENSE file,
-# or contact permission@sei.cmu.edu for the full terms.
+# gbperftest, Timothy A. Davis, (c) 2026, All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
 
 # do_gap_tc: run the GAP benchmarks for Triangle Counting
 

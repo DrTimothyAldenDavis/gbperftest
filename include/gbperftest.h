@@ -2,7 +2,7 @@
 // gbperftest/include/gbperftest.h: include file for gbperftest utility library
 //------------------------------------------------------------------------------
 
-// peftest, Timothy A. Davis, (c) 2026, All Rights Reserved.
+// gbperftest, Timothy A. Davis, (c) 2026, All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
 //------------------------------------------------------------------------------

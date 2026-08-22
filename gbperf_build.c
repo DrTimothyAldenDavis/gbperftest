@@ -274,7 +274,7 @@ int main (int argc, char **argv)
             pass, tbest [0], tbest [1], tbest [0] / tbest [1]) ;
         printf ("PASS %d, Best trans times: CPU %g, GPU %g, speedup %g\n",
             pass, ttran [0], ttran [1], ttran [0] / ttran [1]) ;
-        printf ("add time on CPU: %g\n", tadd) ;
+        if (nrows == ncols) printf ("add time on CPU: %g\n", tadd) ;
         printf ("---------------------------------------------------------\n") ;
 
         //----------------------------------------------------------------------

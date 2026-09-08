@@ -8,8 +8,11 @@
 //------------------------------------------------------------------------------
 
 // usage:
-//     ./build/simple_perf matrixfile sourcenodes
-//     ./build/simple_perf m n nvals
+//     ./build/gbperf_transpose matrixfile sourcenodes
+//     ./build/gbperf_transpose m n nvals
+
+// Currently the matrix must be square, only because the LAGraph_Graph is used
+// to hold the matrix.
 
 #include "gbperftest.h"
 
@@ -37,6 +40,9 @@ int main (int argc, char **argv)
 //  GB_Global_malloc_tracking_set (true) ;
 
     OK (demo_init (0)) ;
+    int device = 0 ;
+    OK (GrB_set (GrB_GLOBAL, GxB_NARENAS + device, GxB_ARENA_DATA)) ;
+    OK (GrB_set (GrB_GLOBAL, GxB_NARENAS + device, GxB_ARENA_HEADER)) ;
 
     if (argc == 4)
     {
@@ -45,9 +51,7 @@ int main (int argc, char **argv)
         sscanf (argv [2], "%" PRId64, &n) ;
         sscanf (argv [3], "%" PRId64, &nvals) ;
         printf ("Random problem: m %ld, n %ld, nvals %ld\n", m, n, nvals) ;
-        double density = ((double) nvals) / (((double) m) * ((double) n)) ;
-        OK (LAGraph_Random_Matrix (&T, GrB_FP64, m, n, density,
-            (uint64_t) 1, msg)) ;
+        OK (gbperf_random (&T, m, n, nvals, (uint64_t) 1, msg)) ;
         OK (LAGraph_New (&G, &T, LAGraph_ADJACENCY_DIRECTED, msg)) ;
     }
     else
@@ -62,7 +66,13 @@ int main (int argc, char **argv)
             argc, argv)) ;
     }
 
-    OK (LAGraph_Graph_Print (G, 2, stdout, msg)) ;
+//  OK (LAGraph_Graph_Print (G, 1, stdout, msg)) ;
+    int err = LAGraph_Graph_Print (G, 1, stdout, msg) ;
+    if (err != 0)
+    {
+        printf ("err: %d, msg [%s]\n", err, msg) ;
+    }
+    OK (err) ;
 
     int64_t m, n ;
     OK (GrB_Matrix_nrows (&m, G->A)) ;
@@ -90,11 +100,12 @@ int main (int argc, char **argv)
     OK (GrB_Matrix_diag (&R, V, 0)) ;
     OK (GrB_free (&V)) ;
 
-    OK (GrB_set (GrB_GLOBAL, (int32_t) 1, GxB_BURBLE)) ;
+    OK (GrB_set (GrB_GLOBAL, (int32_t) 0, GxB_BURBLE)) ;
 
     for (int gpu = 0 ; gpu <= ngpus ; gpu++)
     {
         GB_Global_hack_set (2, gpu ? 1:2) ;
+        printf ("\n------ testing with gpu: %d\n", gpu) ;
 
         // rowscale
         for (int k = 0 ; k < 3 ; k++)
@@ -121,8 +132,6 @@ int main (int argc, char **argv)
         }
     }
 
-    OK (GrB_set (GrB_GLOBAL, (int32_t) 0, GxB_BURBLE)) ;
-
     OK (GrB_free (&R)) ;
     OK (GrB_free (&C)) ;
 
@@ -133,6 +142,7 @@ int main (int argc, char **argv)
     for (int gpu = 0 ; gpu <= ngpus ; gpu++)
     {
         GB_Global_hack_set (2, gpu ? 1:2) ;
+        printf ("\n------ testing with gpu: %d\n", gpu) ;
         for (int k = 0 ; k < 3 ; k++)
         {
             double t = LAGraph_WallClockTime ( ) ;

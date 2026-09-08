@@ -50,6 +50,9 @@ int main (int argc, char **argv)
     // turn off the GPU
     GB_Global_hack_set (2, 2) ;
     OK (demo_init (0)) ;
+//  int device = 0 ;
+//  OK (GrB_set (GrB_GLOBAL, GxB_NARENAS + device, GxB_ARENA_DATA)) ;
+//  OK (GrB_set (GrB_GLOBAL, GxB_NARENAS + device, GxB_ARENA_HEADER)) ;
     GB_Global_hack_set (2, 2) ;
 
     srand (1) ;

@@ -81,8 +81,11 @@ int main (int argc, char **argv)
     LAGraph_Graph G = NULL ;
 
     // start GraphBLAS and LAGraph
-    bool burble = true ;
+    bool burble = false ;    // BURBLE
     demo_init (burble) ;
+    int device = 0 ;
+    OK (GrB_set (GrB_GLOBAL, GxB_NARENAS + device, GxB_ARENA_DATA)) ;
+    OK (GrB_set (GrB_GLOBAL, GxB_NARENAS + device, GxB_ARENA_HEADER)) ;
 
     int ntrials = 5 ;
     // ntrials = 1 ;        // HACK
@@ -138,7 +141,7 @@ int main (int argc, char **argv)
     // triangle counting
     //--------------------------------------------------------------------------
 
-    LG_SET_BURBLE (true) ;
+    LG_SET_BURBLE (burble) ;
     GrB_Index ntriangles, ntsimple = 0 ;
 
 #if 0

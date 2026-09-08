@@ -68,6 +68,9 @@ int main (int argc, char **argv)
     // start GraphBLAS and LAGraph
     bool burble = false ;       // BURBLE
     demo_init (burble) ;
+    int device = 0 ;
+    OK (GrB_set (GrB_GLOBAL, GxB_NARENAS + device, GxB_ARENA_DATA)) ;
+    OK (GrB_set (GrB_GLOBAL, GxB_NARENAS + device, GxB_ARENA_HEADER)) ;
 
     //--------------------------------------------------------------------------
     // get inputs

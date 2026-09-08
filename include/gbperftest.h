@@ -26,3 +26,15 @@ void gbperftest_nothing (void) ;
     }                                                                       \
 }
 
+GrB_Info gbperf_random  // random uint64 matrix
+(
+    // output
+    GrB_Matrix *A,      // A is constructed on output
+    // input
+    GrB_Index nrows,    // # of rows of A
+    GrB_Index ncols,    // # of columns of A
+    GrB_Index nvals,    // # of entries of A
+    uint64_t seed,      // random number seed
+    char *msg
+) ;
+

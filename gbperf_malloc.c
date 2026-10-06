@@ -7,7 +7,7 @@
 
 //------------------------------------------------------------------------------
 
-// usage: ./build/simple_perf matrixfile sourcenodes
+// usage: ./build/gbperf_malloc nbig nmallocs ntrials
 
 #include "gbperftest.h"
 

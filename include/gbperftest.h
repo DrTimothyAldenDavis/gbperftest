@@ -21,7 +21,8 @@ void gbperftest_nothing (void) ;
     GrB_Info this_info = (method) ;                                         \
     if (this_info < GrB_SUCCESS)                                            \
     {                                                                       \
-        fprintf (stderr, "fail: line %d file %s\n", __LINE__, __FILE__) ;   \
+        fprintf (stderr, "fail: info: %d line %d file %s\n",                \
+            this_info, __LINE__, __FILE__) ;                                \
         abort ( ) ;                                                         \
     }                                                                       \
 }

@@ -66,7 +66,7 @@ int main (int argc, char **argv)
     GrB_Scalar Zero = NULL ;
 
     // start GraphBLAS and LAGraph
-    bool burble = false ;       // BURBLE
+    bool burble = true ;       // BURBLE
     demo_init (burble) ;
     int device = 0 ;
     OK (GrB_set (GrB_GLOBAL, GxB_NARENAS + device, GxB_ARENA_DATA)) ;
@@ -155,8 +155,8 @@ int main (int argc, char **argv)
         // build the matrix
         //----------------------------------------------------------------------
 
-        double tbest [8], ttran [8], tadd ;
-        tadd = INFINITY ;
+        double tbest [8], ttran [8], tadd [8], temult [8] ;
+
         for (int32_t ngpus = 0 ; ngpus <= ngpus_max ; ngpus++)
         {
             printf ("\n======================== Benchmark with %d GPUs:\n",
@@ -164,8 +164,10 @@ int main (int argc, char **argv)
             OK (GrB_Global_set_INT32 (GrB_GLOBAL, ngpus, GxB_NGPUS)) ;
             int32_t ngpus_used = 0 ;
             OK (GrB_Global_get_INT32 (GrB_GLOBAL, &ngpus_used, GxB_NGPUS));
-            tbest [ngpus] = INFINITY ;
-            ttran [ngpus] = INFINITY ;
+            tbest  [ngpus] = INFINITY ;
+            ttran  [ngpus] = INFINITY ;
+            tadd   [ngpus] = INFINITY ;
+            temult [ngpus] = INFINITY ;
 
             for (int32_t k = 0 ; k < 3 ; k++)
             {
@@ -197,11 +199,13 @@ int main (int argc, char **argv)
 
                 // OK (GxB_print (A, 1)) ;
 
+                #if 0
                 if (nvals <= (10 * 1000 * 1000) && k == 0)
                 {
                     printf ("DUP to check\n") ;
                     OK (GrB_Matrix_dup (&(Results [ngpus]), A)) ;
                 }
+                #endif
 
                 t = LAGraph_WallClockTime ( ) ;
                 double sum = 0 ;
@@ -222,12 +226,14 @@ int main (int argc, char **argv)
                 printf ("\n\nTRANSPOSES (%d) ==========================:\n",k) ;
                 t = LAGraph_WallClockTime ( ) ;
                 OK (GrB_transpose (B, NULL, NULL, A, NULL)) ;
+                OK (GrB_wait (B, GrB_MATERIALIZE)) ;
                 t = LAGraph_WallClockTime ( ) - t ;
                 // printf ("first transpose time: %g\n", t) ;
                 OK (GrB_Matrix_clear (B)) ;
 
                 double t1 = LAGraph_WallClockTime ( ) ;
                 OK (GrB_transpose (B, NULL, NULL, A, NULL)) ;
+                OK (GrB_wait (B, GrB_MATERIALIZE)) ;
                 t1 = LAGraph_WallClockTime ( ) - t1 ;
                 // printf ("first transpose time: %g\n", t) ;
 
@@ -250,20 +256,39 @@ int main (int argc, char **argv)
                 // test C=A+B
                 //--------------------------------------------------------------
 
-                if (ngpus == 0 && nrows == ncols)
+                if (nrows == ncols)
                 {
-                    printf ("\n\nADD (%d) ==========================:\n",k) ;
-                    // GxB_print (A, 2) ;
-                    // GxB_print (B, 2) ;
+                    printf ("\n\nADD and EMULT (%d) ==========================:\n",k) ;
+//                  GxB_print (A, 3) ;
+//                  GxB_print (B, 3) ;
 
                     t1 = LAGraph_WallClockTime ( ) ;
-                    OK (GrB_eWiseAdd (C, NULL, NULL, GrB_PLUS_FP64,
-                        A, B, NULL)) ;
+                    OK (GrB_eWiseAdd (C, NULL, NULL, GrB_PLUS_FP64, A, B,
+                        NULL)) ;
                     t1 = LAGraph_WallClockTime ( ) - t1 ;
-                    tadd = fmin (tadd, t1) ;
+                    tadd [ngpus] = fmin (tadd [ngpus], t1) ;
 
-                    // GxB_print (C, 2) ;
-                    printf ("add time: %g\n", t) ;
+                    double t2 = LAGraph_WallClockTime ( ) ;
+                    OK (GrB_eWiseMult (C, NULL, NULL, GrB_PLUS_FP64, A, B,
+                        NULL)) ;
+                    t2 = LAGraph_WallClockTime ( ) - t2 ;
+                    temult [ngpus] = fmin (temult [ngpus], t2) ;
+                
+                    printf ("\n---------------- eWiseMuutl result (gpu %d:\n",
+                        ngpus) ;
+                    // OK (GxB_print (C, 2)) ;
+
+                    #if 1
+                    if (nvals <= (10 * 1000 * 1000) && k == 0)
+                    {
+                        printf ("DUP to check\n") ;
+                        OK (GrB_Matrix_dup (&(Results [ngpus]), C)) ;
+                    }
+                    #endif
+
+//                  GxB_print (C, 3) ;
+                    printf ("add time (GPU: %d): %g\n", ngpus, t1) ;
+                    printf ("emult time (GPU: %d): %g\n", ngpus, t2) ;
                 }
 
                 GrB_Matrix_free (&A) ;
@@ -277,7 +302,10 @@ int main (int argc, char **argv)
             pass, tbest [0], tbest [1], tbest [0] / tbest [1]) ;
         printf ("PASS %d, Best trans times: CPU %g, GPU %g, speedup %g\n",
             pass, ttran [0], ttran [1], ttran [0] / ttran [1]) ;
-        if (nrows == ncols) printf ("add time on CPU: %g\n", tadd) ;
+        printf ("PASS %d, Best add   times: CPU %g, GPU %g, speedup %g\n",
+            pass, tadd  [0], tadd  [1], tadd  [0] / tadd  [1]) ;
+        printf ("PASS %d, Best emult times: CPU %g, GPU %g, speedup %g\n",
+            pass, temult[0], temult[1], temult[0] / temult[1]) ;
         printf ("---------------------------------------------------------\n") ;
 
         //----------------------------------------------------------------------
@@ -303,6 +331,13 @@ int main (int argc, char **argv)
                     GrB_VALUENE_FP64, A, Zero, NULL)) ;
                 printf ("mismatch: CPU results - GPU results:\n") ;
                 OK (GxB_print (A, 3)) ;
+
+                printf ("======================= CPU results:\n") ;
+                OK (GxB_print (Results [0], 3)) ;
+
+                printf ("======================= GPU results:\n") ;
+                OK (GxB_print (Results [1], 3)) ;
+
             }
         }
     }

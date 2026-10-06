@@ -1,5 +1,5 @@
 //------------------------------------------------------------------------------
-// gbperftest/gbperf_transpose: basic performance tests (scale and transpose)
+// gbperftest/gbperf_select: basic performance tests (select)
 //------------------------------------------------------------------------------
 
 // gbperftest, Timothy A. Davis, (c) 2026, All Rights Reserved.
@@ -8,8 +8,8 @@
 //------------------------------------------------------------------------------
 
 // usage:
-//     ./build/gbperf_transpose matrixfile sourcenodes
-//     ./build/gbperf_transpose m n nvals
+//     ./build/gbperf_select matrixfile
+//     ./build/gbperf_select m n nvals
 
 // Currently the matrix must be square, only because the LAGraph_Graph is used
 // to hold the matrix.
@@ -43,7 +43,6 @@ int main (int argc, char **argv)
     int device = 0 ;
     OK (GrB_set (GrB_GLOBAL, GxB_NARENAS + device, GxB_ARENA_DATA)) ;
     OK (GrB_set (GrB_GLOBAL, GxB_NARENAS + device, GxB_ARENA_HEADER)) ;
-    OK (GrB_set (GrB_GLOBAL, (int32_t) 1, GxB_BURBLE)) ;
 
     if (argc == 4)
     {
@@ -84,58 +83,30 @@ int main (int argc, char **argv)
 
     OK (GrB_free (&(G->AT))) ;
 
-    //--------------------------------------------------------------------------
-    // test row/col scale
-    //--------------------------------------------------------------------------
+    OK (GrB_set (GrB_GLOBAL, (int32_t) 0, GxB_BURBLE)) ;
 
-    uint64_t I [1] = {0} ;
-    OK (GrB_Vector_new (&V, type, n)) ;
-    OK (GrB_assign (V, NULL, NULL, 1, GrB_ALL, n, NULL)) ;
-    OK (GrB_assign (V, NULL, NULL, 2, I, 1, NULL)) ;    // make V non-iso
-    OK (GrB_Matrix_diag (&C, V, 0)) ;
-    OK (GrB_free (&V)) ;
-
-    OK (GrB_Vector_new (&V, type, m)) ;
-    OK (GrB_assign (V, NULL, NULL, 1, GrB_ALL, m, NULL)) ;
-    OK (GrB_assign (V, NULL, NULL, 2, I, 1, NULL)) ;    // make V non-iso
-    OK (GrB_Matrix_diag (&R, V, 0)) ;
-    OK (GrB_free (&V)) ;
+    //--------------------------------------------------------------------------
+    // test select with TRIL
+    //--------------------------------------------------------------------------
 
     for (int gpu = 0 ; gpu <= ngpus ; gpu++)
     {
         GB_Global_hack_set (2, gpu ? 1:2) ;
         printf ("\n------ testing with gpu: %d\n", gpu) ;
-
-        // rowscale
         for (int k = 0 ; k < 3 ; k++)
         {
             double t = LAGraph_WallClockTime ( ) ;
             OK (GrB_Matrix_new (&T, type, n, n)) ;
-            OK (GrB_mxm (T, NULL, NULL, GrB_PLUS_TIMES_SEMIRING_FP64,
-                G->A, C, NULL)) ;
+            OK (GrB_select (T, NULL, NULL, GrB_TRIL, G->A, (int64_t) 0,
+                NULL)) ;
             t = LAGraph_WallClockTime ( ) - t ;
-            printf ("GPU: %d, T=A*C, trial %d: %g sec\n", gpu, k, t) ;
-            OK (GrB_free (&T)) ;
-        }
-
-        // colscale
-        for (int k = 0 ; k < 3 ; k++)
-        {
-            double t = LAGraph_WallClockTime ( ) ;
-            OK (GrB_Matrix_new (&T, type, n, n)) ;
-            OK (GrB_mxm (T, NULL, NULL, GrB_PLUS_TIMES_SEMIRING_FP64,
-                R, G->A, NULL)) ;
-            t = LAGraph_WallClockTime ( ) - t ;
-            printf ("GPU: %d, T=R*A, trial %d: %g sec\n", gpu, k, t) ;
+            printf ("GPU: %d, T=tril(A), trial %d: %g sec\n", gpu, k, t) ;
             OK (GrB_free (&T)) ;
         }
     }
 
-    OK (GrB_free (&R)) ;
-    OK (GrB_free (&C)) ;
-
     //--------------------------------------------------------------------------
-    // test the transpose
+    // test select with TRIU
     //--------------------------------------------------------------------------
 
     for (int gpu = 0 ; gpu <= ngpus ; gpu++)
@@ -146,9 +117,10 @@ int main (int argc, char **argv)
         {
             double t = LAGraph_WallClockTime ( ) ;
             OK (GrB_Matrix_new (&T, type, n, n)) ;
-            OK (GrB_transpose (T, NULL, NULL, G->A, NULL)) ;
+            OK (GrB_select (T, NULL, NULL, GrB_TRIU, G->A, (int64_t) 0,
+                NULL)) ;
             t = LAGraph_WallClockTime ( ) - t ;
-            printf ("GPU: %d, Transpose, trial %d: %g sec\n", gpu, k, t) ;
+            printf ("GPU: %d, T=triu(A), trial %d: %g sec\n", gpu, k, t) ;
             OK (GrB_free (&T)) ;
         }
     }

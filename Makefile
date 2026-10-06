@@ -27,3 +27,34 @@ purge: distclean
 distclean:
 	- $(RM) -rf build/* Config/*.tmp
 
+# quick tests with small matrices
+test: library
+	# gbperf_build: m n nvals seed
+	./build/gbperf_build 1000 2000 10000 2
+	./build/gbperf_build 1000 1000 10000 2
+	# gbperf_malloc: nbig nmalloc ntrials
+	./build/gbperf_malloc 1000 10 1000
+	# gbperf_select: m n nvals
+	./build/gbperf_select 1000 1000 10000
+	# gbperf_transpose: m n nvals
+	./build/gbperf_transpose 1000 1000 10000
+	# gbperf_trianglecount: matrixmarketfile.mtx
+	./build/gbperf_trianglecount matrices/karate.mtx
+
+# performance tests
+perf: library
+	# gbperf_transpose: m n nvals
+	./build/gbperf_transpose 1000000 1000000 1000000000
+	# gbperf_build: m n nvals seed
+	./build/gbperf_build 1000000 1000000 1000000000 1
+
+kron:
+	# gbperf_trianglecount: matrixmarketfile.mtx
+	./build/gbperf_trianglecount /raid/GAP/GAP-road/GAP-road.grb
+	./build/gbperf_trianglecount /raid/GAP/GAP-kron/GAP-kron.grb
+
+just: library
+	./build/gbperf_build 100 100 20 2
+
+quick: library
+	./build/gbperf_build 1000 1000 10000 2

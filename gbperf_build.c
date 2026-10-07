@@ -262,18 +262,18 @@ int main (int argc, char **argv)
 //                  GxB_print (A, 3) ;
 //                  GxB_print (B, 3) ;
 
+                    double t2 = LAGraph_WallClockTime ( ) ;
+                    OK (GrB_eWiseMult (C, NULL, NULL, GrB_PLUS_FP64, A, B,
+                        NULL)) ;
+                    t2 = LAGraph_WallClockTime ( ) - t2 ;
+                    temult [ngpus] = fmin (temult [ngpus], t2) ;
+
                     t1 = LAGraph_WallClockTime ( ) ;
                     OK (GrB_eWiseAdd (C, NULL, NULL, GrB_PLUS_FP64, A, B,
                         NULL)) ;
                     t1 = LAGraph_WallClockTime ( ) - t1 ;
                     tadd [ngpus] = fmin (tadd [ngpus], t1) ;
 
-                    double t2 = LAGraph_WallClockTime ( ) ;
-                    OK (GrB_eWiseMult (C, NULL, NULL, GrB_PLUS_FP64, A, B,
-                        NULL)) ;
-                    t2 = LAGraph_WallClockTime ( ) - t2 ;
-                    temult [ngpus] = fmin (temult [ngpus], t2) ;
-                
                     printf ("\n---------------- eWiseMuutl result (gpu %d:\n",
                         ngpus) ;
                     // OK (GxB_print (C, 2)) ;

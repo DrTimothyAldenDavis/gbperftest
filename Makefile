@@ -48,7 +48,7 @@ perf: library
 	# gbperf_build: m n nvals seed
 	./build/gbperf_build 1000000 1000000 1000000000 1
 
-kron:
+tri:
 	# gbperf_trianglecount: matrixmarketfile.mtx
 	./build/gbperf_trianglecount /raid/GAP/GAP-road/GAP-road.grb
 	./build/gbperf_trianglecount /raid/GAP/GAP-kron/GAP-kron.grb

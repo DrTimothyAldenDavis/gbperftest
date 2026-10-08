@@ -80,7 +80,7 @@ target_link_libraries ( gbperftest PUBLIC m )
 # add testing executables
 #-------------------------------------------------------------------------------
 
-file ( GLOB TEST_SOURCES LIST_DIRECTORIES false gbperf_*.c )
+file ( GLOB TEST_SOURCES LIST_DIRECTORIES false *.c )
 
 foreach ( test_source_file ${TEST_SOURCES} )
     get_filename_component ( test_filename ${test_source_file} NAME )

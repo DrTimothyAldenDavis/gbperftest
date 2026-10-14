@@ -58,3 +58,7 @@ just: library
 
 quick: library
 	./build/gbperf_build 1000 1000 10000 2
+
+bug: library
+	./build/gbperf_build 1000000 1000000 10000000 1
+

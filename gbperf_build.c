@@ -26,6 +26,7 @@
     GrB_free (&I) ;                             \
     GrB_free (&J) ;                             \
     GrB_free (&X) ;                             \
+    GrB_free (&L) ;                             \
     GrB_free (&(Results [0])) ;                 \
     GrB_free (&(Results [1])) ;                 \
     GrB_free (&State) ;                         \
@@ -60,7 +61,7 @@ int main (int argc, char **argv)
 
     char msg [LAGRAPH_MSG_LEN] ;        // for error messages from LAGraph
     GrB_BinaryOp Mod = NULL ;
-    GrB_Matrix A = NULL, B = NULL, C = NULL ;
+    GrB_Matrix A = NULL, B = NULL, C = NULL, L = NULL ;
     GrB_Matrix Results [2] = { NULL, NULL } ;
     GrB_Vector I = NULL, J = NULL, X = NULL, State = NULL ;
     GrB_Scalar Zero = NULL ;
@@ -155,7 +156,8 @@ int main (int argc, char **argv)
         // build the matrix
         //----------------------------------------------------------------------
 
-        double tbest [8], ttran [8], tadd [8], temult [8] ;
+        double tbest [8], ttran [8], tadd [8], temult [8],
+            tadd_mask [8] ;
 
         for (int32_t ngpus = 0 ; ngpus <= ngpus_max ; ngpus++)
         {
@@ -167,6 +169,7 @@ int main (int argc, char **argv)
             tbest  [ngpus] = INFINITY ;
             ttran  [ngpus] = INFINITY ;
             tadd   [ngpus] = INFINITY ;
+            tadd_mask [ngpus] = INFINITY ;
             temult [ngpus] = INFINITY ;
 
             for (int32_t k = 0 ; k < 3 ; k++)
@@ -192,6 +195,19 @@ int main (int argc, char **argv)
                 }
 
                 tbest [ngpus] = fmin (tbest [ngpus], t) ;
+
+                //--------------------------------------------------------------
+                // construct mask
+                //--------------------------------------------------------------
+
+// the masked CUDA ewiseAdd kernel has an infinite loop
+#define BUG 1
+#if BUG
+                // L = tril (A)
+                OK (GrB_Matrix_new (&L, GrB_FP64, nrows, ncols)) ;
+                OK (GrB_Matrix_select_INT32 (L, NULL, NULL, GrB_TRIL, A, 0,
+                    NULL)) ;
+#endif
 
                 //--------------------------------------------------------------
                 // print the matrix and reduce to scalar
@@ -274,8 +290,17 @@ int main (int argc, char **argv)
                     t1 = LAGraph_WallClockTime ( ) - t1 ;
                     tadd [ngpus] = fmin (tadd [ngpus], t1) ;
 
-                    printf ("\n---------------- eWiseMuutl result (gpu %d:\n",
-                        ngpus) ;
+#if BUG
+                    printf ("\n################# Masked add:\n") ;
+                    double t3 = LAGraph_WallClockTime ( ) ;
+                    OK (GrB_Matrix_clear (C)) ;
+                    // C<tril(A), struct> = A+B where C is initially empty
+                    OK (GrB_eWiseAdd (C, L, NULL, GrB_PLUS_FP64, A, B,
+                        GrB_DESC_S)) ;
+                    t3 = LAGraph_WallClockTime ( ) - t3 ;
+                    tadd_mask [ngpus] = fmin (tadd_mask [ngpus], t3) ;
+#endif
+
                     // OK (GxB_print (C, 2)) ;
 
                     #if 1
@@ -289,6 +314,9 @@ int main (int argc, char **argv)
 //                  GxB_print (C, 3) ;
                     printf ("add time (GPU: %d): %g\n", ngpus, t1) ;
                     printf ("emult time (GPU: %d): %g\n", ngpus, t2) ;
+#if BUG                
+                    printf ("add_mask time (GPU: %d): %g\n", ngpus, t3) ;
+#endif
                 }
 
                 GrB_Matrix_free (&A) ;
@@ -304,6 +332,10 @@ int main (int argc, char **argv)
             pass, ttran [0], ttran [1], ttran [0] / ttran [1]) ;
         printf ("PASS %d, Best add   times: CPU %g, GPU %g, speedup %g\n",
             pass, tadd  [0], tadd  [1], tadd  [0] / tadd  [1]) ;
+#if BUG
+        printf ("PASS %d, Best add_mask times: CPU %g, GPU %g, speedup %g\n",
+            pass, tadd_mask  [0], tadd_mask  [1], tadd_mask  [0] / tadd_mask  [1]) ;
+#endif
         printf ("PASS %d, Best emult times: CPU %g, GPU %g, speedup %g\n",
             pass, temult[0], temult[1], temult[0] / temult[1]) ;
         printf ("---------------------------------------------------------\n") ;

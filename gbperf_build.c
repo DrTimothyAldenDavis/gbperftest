@@ -207,6 +207,7 @@ int main (int argc, char **argv)
                 OK (GrB_Matrix_new (&L, GrB_FP64, nrows, ncols)) ;
                 OK (GrB_Matrix_select_INT32 (L, NULL, NULL, GrB_TRIL, A, 0,
                     NULL)) ;
+                OK (GrB_Matrix_apply (L, NULL, NULL, GxB_ONE_FP64, L, NULL)) ;
 #endif
 
                 //--------------------------------------------------------------
@@ -283,12 +284,15 @@ int main (int argc, char **argv)
                         NULL)) ;
                     t2 = LAGraph_WallClockTime ( ) - t2 ;
                     temult [ngpus] = fmin (temult [ngpus], t2) ;
+// printf ("emult result:\n") ; OK (GxB_print (C, 2)) ;
 
+                    OK (GrB_Matrix_clear (C)) ;
                     t1 = LAGraph_WallClockTime ( ) ;
                     OK (GrB_eWiseAdd (C, NULL, NULL, GrB_PLUS_FP64, A, B,
                         NULL)) ;
                     t1 = LAGraph_WallClockTime ( ) - t1 ;
                     tadd [ngpus] = fmin (tadd [ngpus], t1) ;
+// printf ("add result:\n") ; OK (GxB_print (C, 2)) ;
 
 #if BUG
                     printf ("\n################# Masked add:\n") ;
@@ -299,6 +303,8 @@ int main (int argc, char **argv)
                         GrB_DESC_S)) ;
                     t3 = LAGraph_WallClockTime ( ) - t3 ;
                     tadd_mask [ngpus] = fmin (tadd_mask [ngpus], t3) ;
+
+// printf ("masked add result:\n") ; OK (GxB_print (C, 2)) ;
 #endif
 
                     // OK (GxB_print (C, 2)) ;
@@ -311,7 +317,6 @@ int main (int argc, char **argv)
                     }
                     #endif
 
-//                  GxB_print (C, 3) ;
                     printf ("add time (GPU: %d): %g\n", ngpus, t1) ;
                     printf ("emult time (GPU: %d): %g\n", ngpus, t2) ;
 #if BUG                

@@ -46,7 +46,10 @@ perf: library
 	# gbperf_transpose: m n nvals
 	./build/gbperf_transpose 1000000 1000000 1000000000
 	# gbperf_build: m n nvals seed
-	./build/gbperf_build 1000000 1000000 1000000000 1
+	./build/gbperf_build 1000000 1000000 700000000 1
+
+perf1: library
+	./build/gbperf_build 1000000 1000000 500000000 1
 
 tri:
 	# gbperf_trianglecount: matrixmarketfile.mtx
@@ -60,5 +63,5 @@ quick: library
 	./build/gbperf_build 1000 1000 10000 2
 
 bug: library
-	./build/gbperf_build 1000000 1000000 10000000 1
+	./build/gbperf_build 1000000 1000000 8000000 1
 

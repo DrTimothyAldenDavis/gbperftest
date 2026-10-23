@@ -85,6 +85,10 @@ int main (int argc, char **argv)
 
     OK (GrB_set (GrB_GLOBAL, (int32_t) 0, GxB_BURBLE)) ;
 
+    // enable per-kernel CPU<->GPU unified-memory traffic stats (no-op if the
+    // build has no CUPTI, or if UM profiling is unavailable on this device)
+    gbperf_um_t um = gbperf_um_create (device) ;
+
     //--------------------------------------------------------------------------
     // test select with TRIL
     //--------------------------------------------------------------------------
@@ -93,16 +97,27 @@ int main (int argc, char **argv)
     {
         GB_Global_hack_set (2, gpu ? 1:2) ;
         printf ("\n------ testing with gpu: %d\n", gpu) ;
+        double best = -1 ;
         for (int k = 0 ; k < 3 ; k++)
         {
+            int collect = (k > 0) ;     // skip the first (warm-up / JIT) run
+            if (collect) gbperf_um_reset (um) ;
             double t = LAGraph_WallClockTime ( ) ;
             OK (GrB_Matrix_new (&T, type, n, n)) ;
             OK (GrB_select (T, NULL, NULL, GrB_TRIL, G->A, (int64_t) 0,
                 NULL)) ;
             t = LAGraph_WallClockTime ( ) - t ;
-            printf ("GPU: %d, T=tril(A), trial %d: %g sec\n", gpu, k, t) ;
+            printf ("GPU: %d, T=tril(A), trial %d: %g sec%s\n", gpu, k, t,
+                collect ? "" : "  (warm-up)") ;
+            if (collect)
+            {
+                gbperf_um_sample (um) ;
+                if (best < 0 || t < best) { best = t ; gbperf_um_keep (um) ; }
+            }
             OK (GrB_free (&T)) ;
         }
+        printf ("GPU: %d, T=tril(A), fastest: %g sec\n", gpu, best) ;
+        gbperf_um_report (um, "tril") ;
     }
 
     //--------------------------------------------------------------------------
@@ -113,22 +128,34 @@ int main (int argc, char **argv)
     {
         GB_Global_hack_set (2, gpu ? 1:2) ;
         printf ("\n------ testing with gpu: %d\n", gpu) ;
+        double best = -1 ;
         for (int k = 0 ; k < 3 ; k++)
         {
+            int collect = (k > 0) ;     // skip the first (warm-up / JIT) run
+            if (collect) gbperf_um_reset (um) ;
             double t = LAGraph_WallClockTime ( ) ;
             OK (GrB_Matrix_new (&T, type, n, n)) ;
             OK (GrB_select (T, NULL, NULL, GrB_TRIU, G->A, (int64_t) 0,
                 NULL)) ;
             t = LAGraph_WallClockTime ( ) - t ;
-            printf ("GPU: %d, T=triu(A), trial %d: %g sec\n", gpu, k, t) ;
+            printf ("GPU: %d, T=triu(A), trial %d: %g sec%s\n", gpu, k, t,
+                collect ? "" : "  (warm-up)") ;
+            if (collect)
+            {
+                gbperf_um_sample (um) ;
+                if (best < 0 || t < best) { best = t ; gbperf_um_keep (um) ; }
+            }
             OK (GrB_free (&T)) ;
         }
+        printf ("GPU: %d, T=triu(A), fastest: %g sec\n", gpu, best) ;
+        gbperf_um_report (um, "triu") ;
     }
 
     //--------------------------------------------------------------------------
     // finalize the test
     //--------------------------------------------------------------------------
 
+    gbperf_um_destroy (um) ;
     OK (LAGraph_Delete (&G, msg)) ;
     OK (LAGraph_Finalize (msg)) ;
     return (0) ;

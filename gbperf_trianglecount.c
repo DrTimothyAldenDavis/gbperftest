@@ -87,6 +87,9 @@ int main (int argc, char **argv)
     OK (GrB_set (GrB_GLOBAL, GxB_NARENAS + device, GxB_ARENA_DATA)) ;
     OK (GrB_set (GrB_GLOBAL, GxB_NARENAS + device, GxB_ARENA_HEADER)) ;
 
+    // enable per-run CPU<->GPU unified-memory traffic stats
+    gbperf_um_t um = gbperf_um_create (device) ;
+
     int ntrials = 5 ;
     // ntrials = 1 ;        // HACK
     printf ("# of trials: %d\n", ntrials) ;
@@ -184,19 +187,29 @@ int main (int argc, char **argv)
     GrB_Index ntriangles_gpu ;
     GB_Global_hack_set (2, 1) ; // always use the GPU
 
+    double best_tri = -1 ;
     for (int trial = 1 ; trial <= 3 ; trial++)
     {
         //LAGr_TriangleCount_Method method = LAGr_TriangleCount_Sandia_ULT ;
+        int collect = (trial > 1) ;      // skip the first (warm-up / JIT) run
+        if (collect) gbperf_um_reset (um) ;
         double ttot = LAGraph_WallClockTime ( ) ;
         OK (LAGr_TriangleCount (&ntriangles_gpu, G, &method, &presort, msg)) ;
         ttot = LAGraph_WallClockTime ( ) - ttot ;
-        printf ("ON GPU (trial %d): # of triangles: %" PRIu64 " (GPU)\n",
-            trial, ntriangles_gpu) ;
+        printf ("ON GPU (trial %d): # of triangles: %" PRIu64 " (GPU)%s\n",
+            trial, ntriangles_gpu, collect ? "" : "  (warm-up)") ;
         print_method (stdout, 6, presort) ;
         printf ("nthreads: %3d time: %12.6f rate: %6.2f"
             " (Sandia_ULT, one trial)\n",
             nthreads_max, ttot, 1e-6 * nvals / ttot) ;
+        if (collect)
+        {
+            gbperf_um_sample (um) ;
+            if (best_tri < 0 || ttot < best_tri)
+                { best_tri = ttot ; gbperf_um_keep (um) ; }
+        }
     }
+    gbperf_um_report (um, "tricount") ;
 
     if (ntriangles_gpu != ntriangles)
     {
@@ -207,6 +220,7 @@ int main (int argc, char **argv)
         abort ( ) ;
     }
 
+    gbperf_um_destroy (um) ;
     LG_FREE_ALL ;
     OK (LAGraph_Finalize (msg)) ;
 #endif

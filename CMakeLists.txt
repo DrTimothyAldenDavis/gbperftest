@@ -77,6 +77,24 @@ target_link_libraries ( gbperftest PUBLIC LAGraphX )
 target_link_libraries ( gbperftest PUBLIC m )
 
 #-------------------------------------------------------------------------------
+# optional: CUPTI for per-kernel CPU<->GPU unified-memory traffic stats
+#-------------------------------------------------------------------------------
+
+# If the CUDA toolkit (with CUPTI) is found, gbperf_um.c is compiled with real
+# CUPTI unified-memory counters; otherwise it falls back to no-op stubs so the
+# benchmarks still build on hosts without CUDA (e.g. macOS).
+
+find_package ( CUDAToolkit QUIET )
+if ( CUDAToolkit_FOUND AND TARGET CUDA::cupti )
+    message ( STATUS "CUPTI found: unified-memory stats ENABLED" )
+    target_compile_definitions ( gbperftest PUBLIC GBPERF_HAS_CUPTI )
+    target_link_libraries ( gbperftest PUBLIC CUDA::cupti CUDA::cudart
+        Threads::Threads )
+else ( )
+    message ( STATUS "CUPTI not found: unified-memory stats disabled" )
+endif ( )
+
+#-------------------------------------------------------------------------------
 # add testing executables
 #-------------------------------------------------------------------------------
 

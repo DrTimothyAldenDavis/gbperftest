@@ -45,6 +45,10 @@ int main (int argc, char **argv)
     OK (GrB_set (GrB_GLOBAL, GxB_NARENAS + device, GxB_ARENA_HEADER)) ;
     OK (GrB_set (GrB_GLOBAL, (int32_t) 1, GxB_BURBLE)) ;
 
+    // enable per-kernel CPU<->GPU unified-memory traffic stats (no-op if the
+    // build has no CUPTI, or if UM profiling is unavailable on this device)
+    gbperf_um_t um = gbperf_um_create (device) ;
+
     if (argc == 4)
     {
         int64_t m = 0, n = 0, nvals = 0 ;
@@ -107,28 +111,52 @@ int main (int argc, char **argv)
         printf ("\n------ testing with gpu: %d\n", gpu) ;
 
         // rowscale
+        double best_ac = -1 ;
         for (int k = 0 ; k < 3 ; k++)
         {
+            int collect = (k > 0) ;     // skip the first (warm-up / JIT) run
+            if (collect) gbperf_um_reset (um) ;
             double t = LAGraph_WallClockTime ( ) ;
             OK (GrB_Matrix_new (&T, type, n, n)) ;
             OK (GrB_mxm (T, NULL, NULL, GrB_PLUS_TIMES_SEMIRING_FP64,
                 G->A, C, NULL)) ;
             t = LAGraph_WallClockTime ( ) - t ;
-            printf ("GPU: %d, T=A*C, trial %d: %g sec\n", gpu, k, t) ;
+            printf ("GPU: %d, T=A*C, trial %d: %g sec%s\n", gpu, k, t,
+                collect ? "" : "  (warm-up)") ;
+            if (collect)
+            {
+                gbperf_um_sample (um) ;
+                if (best_ac < 0 || t < best_ac)
+                    { best_ac = t ; gbperf_um_keep (um) ; }
+            }
             OK (GrB_free (&T)) ;
         }
+        printf ("GPU: %d, T=A*C, fastest: %g sec\n", gpu, best_ac) ;
+        gbperf_um_report (um, "A*C") ;
 
         // colscale
+        double best_ra = -1 ;
         for (int k = 0 ; k < 3 ; k++)
         {
+            int collect = (k > 0) ;     // skip the first (warm-up / JIT) run
+            if (collect) gbperf_um_reset (um) ;
             double t = LAGraph_WallClockTime ( ) ;
             OK (GrB_Matrix_new (&T, type, n, n)) ;
             OK (GrB_mxm (T, NULL, NULL, GrB_PLUS_TIMES_SEMIRING_FP64,
                 R, G->A, NULL)) ;
             t = LAGraph_WallClockTime ( ) - t ;
-            printf ("GPU: %d, T=R*A, trial %d: %g sec\n", gpu, k, t) ;
+            printf ("GPU: %d, T=R*A, trial %d: %g sec%s\n", gpu, k, t,
+                collect ? "" : "  (warm-up)") ;
+            if (collect)
+            {
+                gbperf_um_sample (um) ;
+                if (best_ra < 0 || t < best_ra)
+                    { best_ra = t ; gbperf_um_keep (um) ; }
+            }
             OK (GrB_free (&T)) ;
         }
+        printf ("GPU: %d, T=R*A, fastest: %g sec\n", gpu, best_ra) ;
+        gbperf_um_report (um, "R*A") ;
     }
 
     OK (GrB_free (&R)) ;
@@ -142,21 +170,34 @@ int main (int argc, char **argv)
     {
         GB_Global_hack_set (2, gpu ? 1:2) ;
         printf ("\n------ testing with gpu: %d\n", gpu) ;
+        double best_tr = -1 ;
         for (int k = 0 ; k < 3 ; k++)
         {
+            int collect = (k > 0) ;     // skip the first (warm-up / JIT) run
+            if (collect) gbperf_um_reset (um) ;
             double t = LAGraph_WallClockTime ( ) ;
             OK (GrB_Matrix_new (&T, type, n, n)) ;
             OK (GrB_transpose (T, NULL, NULL, G->A, NULL)) ;
             t = LAGraph_WallClockTime ( ) - t ;
-            printf ("GPU: %d, Transpose, trial %d: %g sec\n", gpu, k, t) ;
+            printf ("GPU: %d, Transpose, trial %d: %g sec%s\n", gpu, k, t,
+                collect ? "" : "  (warm-up)") ;
+            if (collect)
+            {
+                gbperf_um_sample (um) ;
+                if (best_tr < 0 || t < best_tr)
+                    { best_tr = t ; gbperf_um_keep (um) ; }
+            }
             OK (GrB_free (&T)) ;
         }
+        printf ("GPU: %d, Transpose, fastest: %g sec\n", gpu, best_tr) ;
+        gbperf_um_report (um, "transpose") ;
     }
 
     //--------------------------------------------------------------------------
     // finalize the test
     //--------------------------------------------------------------------------
 
+    gbperf_um_destroy (um) ;
     OK (LAGraph_Delete (&G, msg)) ;
     OK (LAGraph_Finalize (msg)) ;
     return (0) ;

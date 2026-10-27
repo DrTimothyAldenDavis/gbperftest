@@ -13,6 +13,7 @@
 #include "LAGraphX.h"
 #include "LAGraph_demo.h"
 #include "../GraphBLAS/Source/global/GB_Global.h"
+#include "gbperf_um.h"
 
 void gbperftest_nothing (void) ;
 

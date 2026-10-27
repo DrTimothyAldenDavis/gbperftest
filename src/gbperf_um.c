@@ -852,7 +852,7 @@ static void print_breakdown
             snprintf (act, sizeof (act), "%8s", "-") ;
         }
 
-        char blk [8], grd [8], reg [6], shm [8], occ [6], cap [6] ;
+        char blk [16], grd [8], reg [6], shm [8], occ [6], cap [6] ;
         if (b [i].name != HOST && b [i].block > 0)
         {
             const char *lim ;

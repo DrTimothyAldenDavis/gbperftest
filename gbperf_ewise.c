@@ -150,42 +150,6 @@ int main (int argc, char **argv)
     double tt [8] ;
 
     //--------------------------------------------------------------------------
-    // test eWiseAdd, no mask
-    //--------------------------------------------------------------------------
-
-    printf ("\n========================================= eWiseAdd, no mask\n") ;
-    #undef  METHOD
-    #define METHOD                                                          \
-        OK (GrB_Matrix_new (&C, type, m, n)) ;                              \
-        OK (GrB_Matrix_set_INT32 (C, sparsity, GxB_SPARSITY_CONTROL)) ;     \
-        OK (GrB_eWiseAdd (C, NULL, NULL, GrB_PLUS_UINT64, A, B, NULL)) ;
-    TEST_METHOD ("C=A+B") ;
-
-    //--------------------------------------------------------------------------
-    // test eWiseAdd, with mask
-    //--------------------------------------------------------------------------
-
-    printf ("\n======================================= eWiseAdd, with mask\n") ;
-    #undef  METHOD
-    #define METHOD                                                          \
-        OK (GrB_Matrix_new (&C, type, m, n)) ;                              \
-        OK (GrB_Matrix_set_INT32 (C, sparsity, GxB_SPARSITY_CONTROL)) ;     \
-        OK (GrB_eWiseAdd (C, M, NULL, GrB_PLUS_UINT64, A, B, GrB_DESC_S)) ;
-    TEST_METHOD ("C<M>=A+B") ;
-
-    //--------------------------------------------------------------------------
-    // test eWiseAdd, with complemented mask
-    //--------------------------------------------------------------------------
-
-    printf ("\n========================== eWiseAdd, with complemented mask\n") ;
-    #undef  METHOD
-    #define METHOD                                                          \
-        OK (GrB_Matrix_new (&C, type, m, n)) ;                              \
-        OK (GrB_Matrix_set_INT32 (C, sparsity, GxB_SPARSITY_CONTROL)) ;     \
-        OK (GrB_eWiseAdd (C, M, NULL, GrB_PLUS_UINT64, A, B, GrB_DESC_SC)) ;
-    TEST_METHOD ("C<!M>=A+B") ;
-
-    //--------------------------------------------------------------------------
     // test eWiseMult, no mask
     //--------------------------------------------------------------------------
 
@@ -221,6 +185,42 @@ int main (int argc, char **argv)
         OK (GrB_Matrix_set_INT32 (C, sparsity, GxB_SPARSITY_CONTROL)) ;     \
         OK (GrB_eWiseMult (C, M, NULL, GrB_PLUS_UINT64, A, B, GrB_DESC_SC)) ;
     TEST_METHOD ("C=<!M>A.*B") ;
+
+    //--------------------------------------------------------------------------
+    // test eWiseAdd, no mask
+    //--------------------------------------------------------------------------
+
+    printf ("\n========================================= eWiseAdd, no mask\n") ;
+    #undef  METHOD
+    #define METHOD                                                          \
+        OK (GrB_Matrix_new (&C, type, m, n)) ;                              \
+        OK (GrB_Matrix_set_INT32 (C, sparsity, GxB_SPARSITY_CONTROL)) ;     \
+        OK (GrB_eWiseAdd (C, NULL, NULL, GrB_PLUS_UINT64, A, B, NULL)) ;
+    TEST_METHOD ("C=A+B") ;
+
+    //--------------------------------------------------------------------------
+    // test eWiseAdd, with mask
+    //--------------------------------------------------------------------------
+
+    printf ("\n======================================= eWiseAdd, with mask\n") ;
+    #undef  METHOD
+    #define METHOD                                                          \
+        OK (GrB_Matrix_new (&C, type, m, n)) ;                              \
+        OK (GrB_Matrix_set_INT32 (C, sparsity, GxB_SPARSITY_CONTROL)) ;     \
+        OK (GrB_eWiseAdd (C, M, NULL, GrB_PLUS_UINT64, A, B, GrB_DESC_S)) ;
+    TEST_METHOD ("C<M>=A+B") ;
+
+    //--------------------------------------------------------------------------
+    // test eWiseAdd, with complemented mask
+    //--------------------------------------------------------------------------
+
+    printf ("\n========================== eWiseAdd, with complemented mask\n") ;
+    #undef  METHOD
+    #define METHOD                                                          \
+        OK (GrB_Matrix_new (&C, type, m, n)) ;                              \
+        OK (GrB_Matrix_set_INT32 (C, sparsity, GxB_SPARSITY_CONTROL)) ;     \
+        OK (GrB_eWiseAdd (C, M, NULL, GrB_PLUS_UINT64, A, B, GrB_DESC_SC)) ;
+    TEST_METHOD ("C<!M>=A+B") ;
 
     //--------------------------------------------------------------------------
     // finalize the test

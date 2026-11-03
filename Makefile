@@ -55,7 +55,11 @@ perf1: library
 
 ew: library
 	# ./build/gbperf_ewise 1000000 1000000 500000000 1
-	./build/gbperf_ewise 100000 100000 500000000 1
+	./build/gbperf_ewise 100000 100000 300000000 1
+
+ew2: library
+	# ./build/gbperf_ewise 1000000 1000000 500000000 1
+	valgrind --leak-check=full --show-leak-kinds=all ./build/gbperf_ewise 1000 1000 30000 1
 
 sel: library
 	# ./build/gbperf_ewise 1000000 1000000 500000000 1

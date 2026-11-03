@@ -93,6 +93,8 @@ int main (int argc, char **argv)
     // test select with TRIL
     //--------------------------------------------------------------------------
 
+    double tt [2] ;
+
     for (int gpu = 0 ; gpu <= ngpus ; gpu++)
     {
         GB_Global_hack_set (2, gpu ? 1:2) ;
@@ -117,8 +119,11 @@ int main (int argc, char **argv)
             OK (GrB_free (&T)) ;
         }
         printf ("GPU: %d, T=tril(A), fastest: %g sec\n", gpu, best) ;
-        gbperf_um_report (um, "tril") ;
+        tt [gpu] = best ;
+        if (gpu) gbperf_um_report (um, "tril") ;
     }
+    printf ("Summary: CPU %g sec, GPU %g sec, speedup %g\n",
+        tt [0], tt [1], tt [0] / tt [1]) ;
 
     //--------------------------------------------------------------------------
     // test select with TRIU
@@ -148,8 +153,11 @@ int main (int argc, char **argv)
             OK (GrB_free (&T)) ;
         }
         printf ("GPU: %d, T=triu(A), fastest: %g sec\n", gpu, best) ;
-        gbperf_um_report (um, "triu") ;
+        tt [gpu] = best ;
+        if (gpu) gbperf_um_report (um, "triu") ;
     }
+    printf ("Summary: CPU %g sec, GPU %g sec, speedup %g\n",
+        tt [0], tt [1], tt [0] / tt [1]) ;
 
     //--------------------------------------------------------------------------
     // finalize the test

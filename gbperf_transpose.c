@@ -43,7 +43,7 @@ int main (int argc, char **argv)
     int device = 0 ;
     OK (GrB_set (GrB_GLOBAL, GxB_NARENAS + device, GxB_ARENA_DATA)) ;
     OK (GrB_set (GrB_GLOBAL, GxB_NARENAS + device, GxB_ARENA_HEADER)) ;
-    OK (GrB_set (GrB_GLOBAL, (int32_t) 1, GxB_BURBLE)) ;
+    OK (GrB_set (GrB_GLOBAL, (int32_t) 0, GxB_BURBLE)) ;
 
     // enable per-kernel CPU<->GPU unified-memory traffic stats (no-op if the
     // build has no CUPTI, or if UM profiling is unavailable on this device)

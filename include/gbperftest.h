@@ -17,6 +17,15 @@
 
 void gbperftest_nothing (void) ;
 
+#define CHK(condition)                                                      \
+{                                                                           \
+    if (!(condition))                                                       \
+    {                                                                       \
+        fprintf (stderr, "fail: line %d file %s\n", __LINE__, __FILE__) ;   \
+        abort ( ) ;                                                         \
+    }                                                                       \
+}
+
 #define OK(method)                                                          \
 {                                                                           \
     GrB_Info this_info = (method) ;                                         \

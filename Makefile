@@ -43,6 +43,10 @@ test: library
 	# gbperf_ewise: m n nvals
 	./build/gbperf_ewise 1000 1000 10000
 
+etest: library
+	# gbperf_ewise: m n nvals
+	valgrind ./build/gbperf_ewise 20 20 200
+
 # performance tests
 perf: library
 	# gbperf_transpose: m n nvals
@@ -54,8 +58,8 @@ perf1: library
 	./build/gbperf_build 1000000 1000000 500000000 1
 
 ew: library
-	# ./build/gbperf_ewise 1000000 1000000 500000000 1
-	./build/gbperf_ewise 100000 100000 300000000 1
+	  ./build/gbperf_ewise 1000000 1000000 500000000 1
+	# ./build/gbperf_ewise  100000 100000  100000000 1
 
 ew2: library
 	# ./build/gbperf_ewise 1000000 1000000 500000000 1

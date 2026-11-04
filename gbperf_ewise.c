@@ -32,7 +32,7 @@
             t = LAGraph_WallClockTime ( ) - t ;                             \
             uint64_t cnvals = 0 ;                                           \
             OK (GrB_Matrix_nvals (&cnvals, C)) ;                            \
-            printf ("GPU: %s, %s, cnvals: %lu, trial %d: %g sec, %s\n",     \
+            printf ("GPU: %20s, %s, cnvals: %lu, trial %d: %g sec, %s\n",   \
                 gpu ? "yes" : "no ", description, cnvals, k, t,             \
                 collect ? "" : "  (warm-up)") ;                             \
             if (collect)                                                    \
@@ -52,7 +52,7 @@
             /* OK (GxB_print (C, 5)) ; */                                   \
             OK (GrB_free (&C)) ;                                            \
         }                                                                   \
-        printf ("GPU: %s, %s, fastest: %g sec\n", gpu ? "yes" : "no ",      \
+        printf ("GPU: %-20s, %s, fastest: %g sec\n", gpu ? "yes" : "no ",   \
             description, best_ac) ;                                         \
         tt [gpu] = best_ac ;                                                \
         if (gpu > 0) gbperf_um_report (um, "description") ;                 \
@@ -67,13 +67,30 @@
     }                                                                       \
     if (ngpus > 0)                                                          \
     {                                                                       \
-        printf ("%s, CPU time %g, GPU time: %g, speedup: %g\n",             \
+        printf ("%-20s, CPU time: %10.4f, GPU time: %10.4f, speedup: %9.2f\n",\
             description,tt [0], tt [1], tt [0] / tt [1]) ;                  \
     }                                                                       \
     OK (GrB_free (&C)) ;                                                    \
     OK (GrB_free (&R [0])) ;                                                \
     OK (GrB_free (&R [1])) ;                                                \
 }
+
+//------------------------------------------------------------------------------
+// unary mod function for uint64: z = x % 4
+//------------------------------------------------------------------------------
+
+void gbperf_mod4 (void *z, const void *x)
+{
+    uint64_t a = (*((uint64_t *) x)) ;
+    (*((uint64_t *) z)) = a % 4 ;
+}
+
+#define MOD4_FUNCTION_DEFN                                          \
+"void gbperf_mod4 (void *z, const void *x)                      \n" \
+"{                                                              \n" \
+    "uint64_t a = (*((uint64_t *) x)) ;                         \n" \
+    "(*((uint64_t *) z)) = a % 4 ;                              \n" \
+"}"
 
 //------------------------------------------------------------------------------
 // main test program
@@ -84,6 +101,7 @@ int main (int argc, char **argv)
 
     GrB_Matrix A = NULL, B = NULL, M = NULL, C = NULL ;
     GrB_Matrix R [2] = { NULL, NULL } ;
+    GrB_UnaryOp Mod4 = NULL ;
 
     //--------------------------------------------------------------------------
     // initialize LAGraph and GraphBLAS and create the test problem
@@ -123,15 +141,22 @@ int main (int argc, char **argv)
     OK (gbperf_random (&B, m, n, nvals, seed, msg)) ;
     seed += nvals ;
     OK (gbperf_random (&M, m, n, nvals, seed, msg)) ;
+
+    // M = M mod 4
+    OK (GxB_UnaryOp_new (&Mod4, (GxB_unary_function) gbperf_mod4,
+        GrB_UINT64, GrB_UINT64, "gbperf_mod4", MOD4_FUNCTION_DEFN)) ;
+    OK (GrB_apply (M, NULL, NULL, Mod4, M, NULL)) ;
+    OK (GrB_free (&Mod4)) ;
+
     int sparsity = GxB_SPARSE + GxB_HYPERSPARSE ;
     OK (GrB_Matrix_set_INT32 (A, sparsity, GxB_SPARSITY_CONTROL)) ;
     OK (GrB_Matrix_set_INT32 (B, sparsity, GxB_SPARSITY_CONTROL)) ;
     OK (GrB_Matrix_set_INT32 (M, sparsity, GxB_SPARSITY_CONTROL)) ;
     #if 0
     {
-        OK (GxB_print (A, 5)) ;
-        OK (GxB_print (B, 5)) ;
-        OK (GxB_print (M, 5)) ;
+        OK (GxB_print (A, 3)) ;
+        OK (GxB_print (B, 3)) ;
+        OK (GxB_print (M, 3)) ;
     }
     #endif
     uint64_t anvals, bnvals, mnvals ;
@@ -162,29 +187,53 @@ int main (int argc, char **argv)
     TEST_METHOD ("C=A.*B") ;
 
     //--------------------------------------------------------------------------
-    // test eWiseMult, mask
+    // test eWiseMult, structural mask
     //--------------------------------------------------------------------------
 
-//  OK (GrB_set (GrB_GLOBAL, (int32_t) 1, GxB_BURBLE)) ;
-    printf ("\n====================================== eWiseMult, with mask\n") ;
+    printf ("\n=========================== eWiseMult, with structural mask\n") ;
     #undef  METHOD
     #define METHOD                                                          \
         OK (GrB_Matrix_new (&C, type, m, n)) ;                              \
         OK (GrB_Matrix_set_INT32 (C, sparsity, GxB_SPARSITY_CONTROL)) ;     \
         OK (GrB_eWiseMult (C, M, NULL, GrB_PLUS_UINT64, A, B, GrB_DESC_S)) ;
-    TEST_METHOD ("C=<M>A.*B") ;
+    TEST_METHOD ("C=<M,struct>A.*B") ;
 
     //--------------------------------------------------------------------------
-    // test eWiseMult, mask
+    // test eWiseMult, valued mask
     //--------------------------------------------------------------------------
 
-    printf ("\n========================= eWiseMult, with complemented mask\n") ;
+    // OK (GrB_set (GrB_GLOBAL, (int32_t) 1, GxB_BURBLE)) ;
+    printf ("\n============================== eWiseMult, with valued mask\n") ;
+    #undef  METHOD
+    #define METHOD                                                          \
+        OK (GrB_Matrix_new (&C, type, m, n)) ;                              \
+        OK (GrB_Matrix_set_INT32 (C, sparsity, GxB_SPARSITY_CONTROL)) ;     \
+        OK (GrB_eWiseMult (C, M, NULL, GrB_PLUS_UINT64, A, B, NULL)) ;
+    TEST_METHOD ("C=<M,value>A.*B") ;
+
+    //--------------------------------------------------------------------------
+    // test eWiseMult, complemented structural mask
+    //--------------------------------------------------------------------------
+
+    printf ("\n============== eWiseMult, with complemented structural mask\n") ;
     #undef  METHOD
     #define METHOD                                                          \
         OK (GrB_Matrix_new (&C, type, m, n)) ;                              \
         OK (GrB_Matrix_set_INT32 (C, sparsity, GxB_SPARSITY_CONTROL)) ;     \
         OK (GrB_eWiseMult (C, M, NULL, GrB_PLUS_UINT64, A, B, GrB_DESC_SC)) ;
-    TEST_METHOD ("C=<!M>A.*B") ;
+    TEST_METHOD ("C=<!M,struct>A.*B") ;
+
+    //--------------------------------------------------------------------------
+    // test eWiseMult, valued complemented mask
+    //--------------------------------------------------------------------------
+
+    printf ("\n================== eWiseMult, with valued complemented mask\n") ;
+    #undef  METHOD
+    #define METHOD                                                          \
+        OK (GrB_Matrix_new (&C, type, m, n)) ;                              \
+        OK (GrB_Matrix_set_INT32 (C, sparsity, GxB_SPARSITY_CONTROL)) ;     \
+        OK (GrB_eWiseMult (C, M, NULL, GrB_PLUS_UINT64, A, B, GrB_DESC_C)) ;
+    TEST_METHOD ("C=<!M,value>A.*B") ;
 
     //--------------------------------------------------------------------------
     // test eWiseAdd, no mask
@@ -202,25 +251,49 @@ int main (int argc, char **argv)
     // test eWiseAdd, with mask
     //--------------------------------------------------------------------------
 
-    printf ("\n======================================= eWiseAdd, with mask\n") ;
+    printf ("\n============================ eWiseAdd, with structural mask\n") ;
     #undef  METHOD
     #define METHOD                                                          \
         OK (GrB_Matrix_new (&C, type, m, n)) ;                              \
         OK (GrB_Matrix_set_INT32 (C, sparsity, GxB_SPARSITY_CONTROL)) ;     \
         OK (GrB_eWiseAdd (C, M, NULL, GrB_PLUS_UINT64, A, B, GrB_DESC_S)) ;
-    TEST_METHOD ("C<M>=A+B") ;
+    TEST_METHOD ("C<M,struct>=A+B") ;
+
+    //--------------------------------------------------------------------------
+    // test eWiseAdd, with valued mask
+    //--------------------------------------------------------------------------
+
+    printf ("\n================================ eWiseAdd, with valued mask\n") ;
+    #undef  METHOD
+    #define METHOD                                                          \
+        OK (GrB_Matrix_new (&C, type, m, n)) ;                              \
+        OK (GrB_Matrix_set_INT32 (C, sparsity, GxB_SPARSITY_CONTROL)) ;     \
+        OK (GrB_eWiseAdd (C, M, NULL, GrB_PLUS_UINT64, A, B, NULL)) ;
+    TEST_METHOD ("C<M,value>=A+B") ;
 
     //--------------------------------------------------------------------------
     // test eWiseAdd, with complemented mask
     //--------------------------------------------------------------------------
 
-    printf ("\n========================== eWiseAdd, with complemented mask\n") ;
+    printf ("\n============== eWiseAdd, with complemented structural mask\n") ;
     #undef  METHOD
     #define METHOD                                                          \
         OK (GrB_Matrix_new (&C, type, m, n)) ;                              \
         OK (GrB_Matrix_set_INT32 (C, sparsity, GxB_SPARSITY_CONTROL)) ;     \
         OK (GrB_eWiseAdd (C, M, NULL, GrB_PLUS_UINT64, A, B, GrB_DESC_SC)) ;
-    TEST_METHOD ("C<!M>=A+B") ;
+    TEST_METHOD ("C<!M,struct>=A+B") ;
+
+    //--------------------------------------------------------------------------
+    // test eWiseAdd, with valued complemented mask
+    //--------------------------------------------------------------------------
+
+    printf ("\n================== eWiseAdd, with valued complemented mask\n") ;
+    #undef  METHOD
+    #define METHOD                                                          \
+        OK (GrB_Matrix_new (&C, type, m, n)) ;                              \
+        OK (GrB_Matrix_set_INT32 (C, sparsity, GxB_SPARSITY_CONTROL)) ;     \
+        OK (GrB_eWiseAdd (C, M, NULL, GrB_PLUS_UINT64, A, B, GrB_DESC_C)) ;
+    TEST_METHOD ("C<!M,value>=A+B") ;
 
     //--------------------------------------------------------------------------
     // finalize the test

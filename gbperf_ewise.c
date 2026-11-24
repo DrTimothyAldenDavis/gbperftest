@@ -16,6 +16,8 @@
 // TEST_METHOD: test a given method
 //------------------------------------------------------------------------------
 
+// FIXME: add a METHOD_INIT and METHOD_FINI
+
 #define TEST_METHOD(description)                                            \
 {                                                                           \
     for (int gpu = 0 ; gpu <= ngpus ; gpu++)                                \
@@ -294,6 +296,19 @@ int main (int argc, char **argv)
         OK (GrB_Matrix_set_INT32 (C, sparsity, GxB_SPARSITY_CONTROL)) ;     \
         OK (GrB_eWiseAdd (C, M, NULL, GrB_PLUS_UINT64, A, B, GrB_DESC_C)) ;
     TEST_METHOD ("C<!M,value>=A+B") ;
+
+    //--------------------------------------------------------------------------
+    // test cast matrix
+    //--------------------------------------------------------------------------
+
+    OK (GrB_set (GrB_GLOBAL, (int32_t) 1, GxB_BURBLE)) ;
+    printf ("\n================== cast matrix\n") ;
+    #undef  METHOD
+    #define METHOD                                                          \
+        OK (GrB_Matrix_new (&C, GrB_FP64, m, n)) ;                          \
+        OK (GrB_Matrix_set_INT32 (C, sparsity, GxB_SPARSITY_CONTROL)) ;     \
+        OK (GrB_assign (C, NULL, NULL, A, GrB_ALL, m, GrB_ALL, n, NULL)) ;
+    TEST_METHOD ("C=(double)A") ;
 
     //--------------------------------------------------------------------------
     // finalize the test
